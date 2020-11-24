@@ -1,0 +1,81 @@
+package me.winspeednl.pr.Commands;
+
+import me.winspeednl.PowerRanks.Main;
+import me.winspeednl.PowerRanks.Data.Users;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
+
+public class Cmd implements CommandExecutor {
+    Main m;
+
+    public Cmd(Main m) {
+        this.m = m;
+    }
+
+    public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+        Users s = new Users(this.m);
+        if (sender instanceof Player) {
+            Player player = (Player)sender;
+            if (cmd.getName().equalsIgnoreCase("powerranks") || cmd.getName().equalsIgnoreCase("pr")) {
+                if (args.length == 0) {
+                    this.m.messageNoArgs(player);
+                } else if (args.length == 1 && args[0].equalsIgnoreCase("help")) {
+                    if (!sender.hasPermission("powerranks.cmd.help") && !sender.isOp()) {
+                        this.m.noPermission(player);
+                    } else {
+                        this.m.helpMenu(player);
+                    }
+                } else if (args[0].equalsIgnoreCase("reload")) {
+                    PluginManager plg;
+                    Plugin plgname;
+                    if (!args[1].equalsIgnoreCase("config")) {
+                        if (!sender.hasPermission("powerranks.cmd.reload") && !sender.isOp()) {
+                            this.m.noPermission(player);
+                        } else {
+                            player.sendMessage(this.m.plp + ChatColor.GREEN + "Reloading " + this.m.pdf.getName());
+                            this.m.reloadConfig();
+                            plg = Bukkit.getPluginManager();
+                            plgname = plg.getPlugin(this.m.pdf.getName());
+                            plg.disablePlugin(plgname);
+                            plg.enablePlugin(plgname);
+                            player.sendMessage(this.m.plp + ChatColor.GREEN + this.m.pdf.getName() + " Reloaded!");
+                        }
+                    }
+
+                    if (args[1].equalsIgnoreCase("config")) {
+                        player.sendMessage(this.m.plp + ChatColor.GREEN + "Reloading (config) " + this.m.pdf.getName());
+                        this.m.reloadConfig();
+                        player.sendMessage(this.m.plp + ChatColor.GREEN + this.m.pdf.getName() + " Reloaded (config)!");
+                    } else if (args[1].equalsIgnoreCase("plugin")) {
+                        player.sendMessage(this.m.plp + ChatColor.GREEN + "Reloading (plugin) " + this.m.pdf.getName());
+                        plg = Bukkit.getPluginManager();
+                        plgname = plg.getPlugin(this.m.pdf.getName());
+                        plg.disablePlugin(plgname);
+                        plg.enablePlugin(plgname);
+                        player.sendMessage(this.m.plp + ChatColor.GREEN + this.m.pdf.getName() + " Reloaded (plugin)!");
+                    } else {
+                        player.sendMessage(this.m.plp + ChatColor.RED + "/powerranks reload [config/plugin/all]");
+                    }
+                } else if (args[0].equalsIgnoreCase("set")) {
+                    s.setGroup((Player)sender, args[1], args[2]);
+                } else if (args[0].equalsIgnoreCase("check")) {
+                    if (args.length == 2) {
+                        s.getGroup(((Player)sender).getName(), args[1]);
+                    } else {
+                        s.getGroup(((Player)sender).getName(), ((Player)sender).getName());
+                    }
+                }
+            }
+        } else {
+            sender.sendMessage("[" + this.m.pdf.getName() + "] " + "Only players can use this command");
+        }
+
+        return false;
+    }
+}
