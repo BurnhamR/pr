@@ -1,0 +1,202 @@
+package me.winspeednl.pr;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.logging.Logger;
+import me.winspeednl.PowerRanks.Commands.Cmd;
+import me.winspeednl.PowerRanks.Events.OnJoin;
+import me.winspeednl.PowerRanks.Events.Prefix;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
+import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class Main extends JavaPlugin implements Listener {
+    public HashMap<String, PermissionAttachment> attachments = new HashMap();
+    public List<String> GroupPermissions = new ArrayList();
+    public PluginDescriptionFile pdf = this.getDescription();
+    public ChatColor black;
+    public ChatColor aqua;
+    public ChatColor red;
+    public ChatColor dark_red;
+    public ChatColor blue;
+    public ChatColor dark_blue;
+    public ChatColor reset;
+    public String plp;
+    protected Logger log;
+    public String fileLoc;
+    public String rank;
+    File configFile;
+    File ranksile;
+    File playersFile;
+    FileConfiguration config;
+    FileConfiguration ranks;
+    FileConfiguration players;
+    protected UpdateChecker updatechecker;
+    public String updatemsg;
+
+    public Main() {
+        this.black = ChatColor.BLACK;
+        this.aqua = ChatColor.AQUA;
+        this.red = ChatColor.RED;
+        this.dark_red = ChatColor.DARK_RED;
+        this.blue = ChatColor.BLUE;
+        this.dark_blue = ChatColor.DARK_BLUE;
+        this.reset = ChatColor.RESET;
+        this.plp = this.black + "[" + this.aqua + this.pdf.getName() + this.black + "]" + this.reset + " ";
+        this.fileLoc = this.getDataFolder() + File.separator + "Ranks" + File.separator;
+        this.updatemsg = "";
+    }
+
+    public void onEnable() {
+        this.updatechecker = new UpdateChecker(this, "http://dev.bukkit.org/bukkit-plugins/powerranks/files.rss");
+        this.updatechecker.updateNeeded();
+        this.log = this.getLogger();
+        Bukkit.getServer().getPluginManager().registerEvents(this, this);
+        Bukkit.getServer().getPluginManager().registerEvents(new OnJoin(this), this);
+        Bukkit.getServer().getPluginManager().registerEvents(new Prefix(this), this);
+        Bukkit.getServer().getPluginCommand("powerranks").setExecutor(new Cmd(this));
+        Bukkit.getServer().getPluginCommand("pr").setExecutor(new Cmd(this));
+        this.createDir(this.fileLoc);
+        this.log.info("Enabled " + this.pdf.getName() + " v" + this.pdf.getVersion().replaceAll("[a-zA-Z]", ""));
+        this.configFile = new File(this.getDataFolder(), "config.yml");
+        this.ranksile = new File(this.fileLoc, "Ranks.yml");
+        this.playersFile = new File(this.fileLoc, "Players.yml");
+        this.config = new YamlConfiguration();
+        this.ranks = new YamlConfiguration();
+        this.players = new YamlConfiguration();
+        this.loadAllFiles();
+
+        try {
+            this.copyFiles();
+        } catch (Exception var2) {
+            var2.printStackTrace();
+        }
+
+    }
+
+    public void onDisable() {
+        this.log.info("Disabled " + this.pdf.getName() + " v" + this.pdf.getVersion().replaceAll("[a-zA-Z]", ""));
+    }
+
+    public void createDir(String path) {
+        File file = new File(path);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+
+    }
+
+    private void copyFiles() throws Exception {
+        if (!this.configFile.exists()) {
+            this.configFile.getParentFile().mkdirs();
+            this.copy(this.getResource("config.yml"), this.configFile);
+        }
+
+        if (!this.ranksile.exists()) {
+            this.ranksile.getParentFile().mkdirs();
+            this.copy(this.getResource("Ranks.yml"), this.ranksile);
+        }
+
+        if (!this.playersFile.exists()) {
+            this.playersFile.getParentFile().mkdirs();
+            this.copy(this.getResource("Players.yml"), this.playersFile);
+        }
+
+    }
+
+    private void copy(InputStream in, File file) {
+        try {
+            OutputStream out = new FileOutputStream(file);
+            byte[] buf = new byte[1024];
+
+            int len;
+            while((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
+            }
+
+            out.close();
+            in.close();
+        } catch (Exception var6) {
+            var6.printStackTrace();
+        }
+
+    }
+
+    public void saveAllFiles() {
+        try {
+            this.config.save(this.configFile);
+            this.ranks.save(this.ranksile);
+            this.players.save(this.playersFile);
+        } catch (IOException var2) {
+            var2.printStackTrace();
+        }
+
+    }
+
+    public void loadAllFiles() {
+        try {
+            this.config.load(this.configFile);
+            this.ranks.load(this.ranksile);
+            this.players.load(this.playersFile);
+        } catch (Exception var2) {
+            var2.printStackTrace();
+        }
+
+    }
+
+    public void errorMessage(Player player, String args) {
+        player.sendMessage(ChatColor.RED + "--------" + ChatColor.DARK_BLUE + this.pdf.getName() + ChatColor.RED + "--------");
+        player.sendMessage("Argument " + args + " not found");
+        player.sendMessage(ChatColor.GREEN + "/pr help");
+        player.sendMessage(ChatColor.RED + "--------------------------");
+    }
+
+    public void messageNoArgs(Player player) {
+        player.sendMessage(ChatColor.DARK_AQUA + "--------" + ChatColor.DARK_BLUE + this.pdf.getName() + ChatColor.DARK_AQUA + "--------");
+        player.sendMessage(ChatColor.GREEN + "/pr help");
+        player.sendMessage("" + ChatColor.GREEN);
+        player.sendMessage(ChatColor.DARK_GREEN + "Authors: " + ChatColor.GREEN + this.pdf.getAuthors());
+        player.sendMessage(ChatColor.DARK_GREEN + "Version: " + ChatColor.GREEN + this.pdf.getVersion());
+        player.sendMessage(ChatColor.DARK_GREEN + "Bukkit DEV: " + ChatColor.GREEN + this.pdf.getWebsite());
+        player.sendMessage(ChatColor.DARK_AQUA + "--------------------------");
+    }
+
+    public void helpMenu(Player player) {
+        player.sendMessage(ChatColor.DARK_AQUA + "--------" + ChatColor.DARK_BLUE + this.pdf.getName() + ChatColor.DARK_AQUA + "--------");
+        player.sendMessage(ChatColor.AQUA + "[Optional] <Requires>");
+        player.sendMessage(ChatColor.GREEN + "/pr help" + ChatColor.DARK_GREEN + " -Shows this menu");
+        player.sendMessage(ChatColor.GREEN + "/pr set <playerName> <Rank (CaSeSeNsEtIvE)>" + ChatColor.DARK_GREEN + " -Set someones rank");
+        player.sendMessage(ChatColor.GREEN + "/pr check [playerName]" + ChatColor.DARK_GREEN + " -Check someones rank");
+        player.sendMessage(ChatColor.DARK_AQUA + "--------------------------");
+    }
+
+    public void errorMessageCheck(Player player) {
+        player.sendMessage(ChatColor.RED + "--------" + ChatColor.DARK_BLUE + this.pdf.getName() + ChatColor.RED + "--------");
+        player.sendMessage(ChatColor.AQUA + "[Optional] <Requires>");
+        player.sendMessage(ChatColor.GREEN + "/pr check [playerName]");
+        player.sendMessage(ChatColor.RED + "--------------------------");
+    }
+
+    public void errorArgsSet(Player player) {
+        player.sendMessage(ChatColor.RED + "--------" + ChatColor.DARK_BLUE + this.pdf.getName() + ChatColor.RED + "--------");
+        player.sendMessage(ChatColor.AQUA + "[Optional] <Requires>");
+        player.sendMessage(ChatColor.GREEN + "/pr set <playerName> <Rank (Case senssetive)>");
+        player.sendMessage(ChatColor.RED + "--------------------------");
+    }
+
+    public void noPermission(Player player) {
+        player.sendMessage(this.plp + ChatColor.DARK_RED + "You don't have permission to perform this command!");
+    }
+}
