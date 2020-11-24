@@ -1,0 +1,48 @@
+package me.winspeednl.pr.Events;
+
+import java.io.File;
+import me.winspeednl.PowerRanks.Main;
+import org.bukkit.ChatColor;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+
+public class Prefix implements Listener {
+    Main m;
+    public String chatColor;
+    public String prefix;
+
+    public Prefix(Main m) {
+        this.m = m;
+    }
+
+    @EventHandler(
+        priority = EventPriority.HIGHEST
+    )
+    public void onPlayerChat(AsyncPlayerChatEvent e) {
+        File rankFile = new File(this.m.fileLoc + "Ranks" + ".yml");
+        File playerFile = new File(this.m.fileLoc + "Players" + ".yml");
+        YamlConfiguration rankYaml = new YamlConfiguration();
+        YamlConfiguration playerYaml = new YamlConfiguration();
+        Player player = e.getPlayer();
+
+        try {
+            rankYaml.load(rankFile);
+            playerYaml.load(playerFile);
+            this.m.rank = playerYaml.getString("players." + player.getName());
+            this.prefix = rankYaml.getString("Groups." + this.m.rank + ".prefix").replaceAll("&", "§");
+            if (rankYaml.getString("Groups." + this.m.rank + ".chatColor") != null) {
+                this.chatColor = rankYaml.getString("Groups." + this.m.rank + ".chatColor").toUpperCase().replaceAll("[0-9]", (String)null);
+                e.setFormat(this.prefix + ChatColor.RESET + " %s: " + ChatColor.valueOf(this.chatColor) + "%s");
+            } else {
+                e.setFormat(this.prefix + ChatColor.RESET + " %s: " + ChatColor.RESET + "%s");
+            }
+        } catch (Exception var8) {
+            e.setFormat("%s: %s");
+        }
+
+    }
+}
