@@ -1,0 +1,67 @@
+package me.winspeednl.pr.Data;
+
+import java.io.File;
+import me.winspeednl.PowerRanks.Main;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
+
+public class Users implements Listener {
+    Main m;
+
+    public Users(Main m) {
+        this.m = m;
+    }
+
+    public void setGroup(Player player, String t, String rank) {
+        if (!player.hasPermission("powerranks.cmd.set") && !player.isOp()) {
+            this.m.errorArgsSet(player);
+        } else {
+            Player target = Bukkit.getServer().getPlayer(t);
+            if (target != null) {
+                File rankFile = new File(this.m.fileLoc + "Ranks" + ".yml");
+                File playerFile = new File(this.m.fileLoc + "Players" + ".yml");
+                YamlConfiguration rankYaml = new YamlConfiguration();
+                YamlConfiguration playerYaml = new YamlConfiguration();
+
+                try {
+                    rankYaml.load(rankFile);
+                    if (rankYaml.get("Groups." + rank) != null) {
+                        playerYaml.load(playerFile);
+                        playerYaml.set("players." + target.getName(), rank);
+                        playerYaml.save(playerFile);
+                        player.sendMessage(this.m.plp + " Set '" + t + "' to rank: " + rank);
+                        target.sendMessage(this.m.plp + " You have been promoted to: " + rank + " by " + player.getName() + ChatColor.RED + "\nRejoin to get the rank!");
+                    } else {
+                        player.sendMessage(this.m.plp + " Group '" + rank + "' not found! " + ChatColor.RED + "Group names must be Case senssetive");
+                    }
+                } catch (Exception var10) {
+                    var10.printStackTrace();
+                }
+            } else {
+                player.sendMessage(this.m.plp + " Player '" + t + "' not found!");
+            }
+        }
+
+    }
+
+    public String getGroup(String plr, String t) {
+        Player sender = Bukkit.getServer().getPlayer(plr);
+        Player target = Bukkit.getServer().getPlayer(t);
+        File playerFile = new File(this.m.fileLoc + "Players" + ".yml");
+        YamlConfiguration playerYaml = new YamlConfiguration();
+        Object group = null;
+
+        try {
+            playerYaml.load(playerFile);
+            group = playerYaml.get("players." + target.getName());
+        } catch (Exception var9) {
+            var9.printStackTrace();
+        }
+
+        sender.sendMessage(this.m.plp + target.getName() + "'s rank is: " + playerYaml.getString("players." + target.getName()));
+        return group.toString();
+    }
+}
